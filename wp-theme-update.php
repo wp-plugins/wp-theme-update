@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Theme Update
 Plugin URI: http://wordpress.org/plugins/wp-theme-update/
-Version: 1.0.0
+Version: 1.0.1
 */
 
 //Insert 'Custom Update URI' as a field in the top of your style.css
@@ -133,5 +133,51 @@ function custom_theme_updater_download_package( $false, $url, $instance ) {
 		return new WP_Error('download_failed', $instance->strings['download_failed'], $download_file->get_error_message());
 
 	return $download_file;
+	
+}
+
+add_filter('upgrader_source_selection', 'rename_folder_name', 10, 3);
+function rename_folder_name($folder, $path, $instance) {
+	
+	$unzipped_folder = basename($folder);
+	
+	$theme_name = @$instance->skin->theme_info->template;
+	
+	if(!isset($theme_name))
+		$theme_name = @$instance->skin->theme;
+	
+	
+	if($theme_name != $unzipped_folder) {
+		
+		$new_folder = str_replace($unzipped_folder, $theme_name, $folder);
+		
+		$new_path = pathinfo($new_folder);
+		$new_path = $new_path['dirname'];
+		
+		//Fallback if the str_replace fails
+		if($new_path != $path) {
+			$theme_folder = explode('/', $folder);
+		
+			$folder_name = array_pop($theme_folder);
+			$slash = '';
+			
+			if(empty($folder_name)) {
+				$folder_name = array_pop($theme_folder);
+				$slash = '/';
+			}
+			
+			if($folder_name != $theme_name) {
+				array_push($theme_folder, $theme_name);
+				$new_folder = implode('/', $theme_folder);
+				$new_folder .= $slash;
+				rename($folder, $new_folder);
+				$folder = $new_folder;
+			}
+		}
+		else
+			$folder = $new_folder;
+	}
+	
+	return $folder;
 	
 }
