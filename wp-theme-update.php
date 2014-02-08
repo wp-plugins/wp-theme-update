@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Theme Update
 Plugin URI: http://wordpress.org/plugins/wp-theme-update/
-Version: 1.0.1
+Version: 1.0.2
 */
 
 //Insert 'Custom Update URI' as a field in the top of your style.css
@@ -174,8 +174,10 @@ function rename_folder_name($folder, $path, $instance) {
 				$folder = $new_folder;
 			}
 		}
-		else
+		else {
+			rename($folder, $new_folder);
 			$folder = $new_folder;
+		}
 	}
 	
 	return $folder;
