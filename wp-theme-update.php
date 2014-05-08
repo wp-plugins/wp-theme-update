@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Theme Update
 Plugin URI: http://wordpress.org/plugins/wp-theme-update/
-Version: 1.0.2
+Version: 1.0.3
 */
 
 //Insert 'Custom Update URI' as a field in the top of your style.css
@@ -146,6 +146,9 @@ function rename_folder_name($folder, $path, $instance) {
 	if(!isset($theme_name))
 		$theme_name = @$instance->skin->theme;
 	
+	//If not a theme that is been updated
+	if(!isset($instance->skin->theme_info) && !isset($instance->skin->theme))
+		return $folder;
 	
 	if($theme_name != $unzipped_folder) {
 		
