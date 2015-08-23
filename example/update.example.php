@@ -14,7 +14,12 @@ add_filter('custom_theme_updater_request_url', 'theme_updater_url', 10, 2);
 function theme_updater_url($url, $id) {
 	if($id == 'MY_THEME_ID_OR_FOLDER') {
 		//Some change necessary to the URL to make the request
-		// $url .= 'versions.json?hashlogin=123';
+		//return array(
+		//	'url' => $url,
+		//	'headers' => array(
+		//		'Authorization' => 'Basic xxxx'
+		//	)
+		//);
 	}
 	return $url;
 }
@@ -37,12 +42,12 @@ function theme_updater_custom_parser($data, $id, $url, $version) {
 		// $url = $data;
 		
 		//You need to return an object with the new version and the url of the zip to download
-		return (object) array(
-			'version' => $nova_versao,
-			'package' => $url
-		);
+		//return (object) array(
+		//	'version' => $data,
+		//	'package' => $url
+		//);
 	}
-	return $dados;
+	return $data;
 }
 
 
@@ -53,7 +58,12 @@ function download_custom_url_update($url, $id) {
 		
 		//If you need to do some change in the zip url do start the download, here is the place
 		
-		// $url .= '?hashlogin=123';
+		//return array(
+		//	'url' => $url,
+		//	'headers' => array(
+		//		'Authorization' => 'Basic xxxx'
+		//	)
+		//);
 		
 	}
 	return $url;

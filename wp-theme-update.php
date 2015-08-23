@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Theme Update
 Plugin URI: http://wordpress.org/plugins/wp-theme-update/
-Version: 1.0.3
+Version: 1.1.0
 */
 
 //Insert 'Custom Update URI' as a field in the top of your style.css
@@ -45,10 +45,17 @@ function custom_theme_updater_searcher($data) {
 		else
 			error_log('update.php Not Found.');
 		
-		
+		$request_options = array('sslverify' => false, 'timeout' => 10);
 		
 		//If needed some adjust to the request URL (e.g. Login info)
 		$url = apply_filters( 'custom_theme_updater_request_url', $update_url, $theme_id );
+
+		if(!is_string($url)) {
+			$_url = (object) $url;
+			$url = $_url->url;
+			if(isset($_url->headers))
+				$request_options['headers'] = $_url->headers;
+		}
 		
 		//Getting data from cache
 		// Note: WP transients fail if key is long than 45 characters
@@ -58,7 +65,7 @@ function custom_theme_updater_searcher($data) {
 		if( empty( $request_data ) ) {
 			
 			//Requesting information about available versions
-			$request = wp_remote_get($url, array('sslverify' => false, 'timeout' => 10));
+			$request = wp_remote_get($url, $request_options);
 			
 			//Some error happened in the request
 			if(is_wp_error($request)) {
@@ -125,15 +132,61 @@ function custom_theme_updater_download_package( $false, $url, $instance ) {
 	
 	
 	$url = apply_filters('custom_theme_updater_download_url', $url, $theme);
-	//Here end my change
 	
-	$download_file = download_url($url);
+	
+	$download_file = theme_update_download_url($url);
+	//Here end my change
 
 	if ( is_wp_error($download_file) )
 		return new WP_Error('download_failed', $instance->strings['download_failed'], $download_file->get_error_message());
 
 	return $download_file;
 	
+}
+
+function theme_update_download_url( $url, $timeout = 300 ) {
+	//WARNING: The file is not automatically deleted, The script must unlink() the file.
+	if ( ! $url )
+		return new WP_Error('http_no_url', __('Invalid URL Provided.'));
+
+	$request_options = array( 'timeout' => $timeout, 'stream' => true );
+
+
+	if(!is_string($url)) {
+		$_url = (object) $url;
+		$url = $_url->url;
+		if(isset($_url->headers))
+			$request_options['headers'] = $_url->headers;
+	}
+
+	$tmpfname = wp_tempnam($url);
+	if ( ! $tmpfname )
+		return new WP_Error('http_no_file', __('Could not create Temporary file.'));
+
+	$request_options['filename'] = $tmpfname;
+
+	$response = wp_safe_remote_get( $url, $request_options );
+
+	if ( is_wp_error( $response ) ) {
+		unlink( $tmpfname );
+		return $response;
+	}
+
+	if ( 200 != wp_remote_retrieve_response_code( $response ) ){
+		unlink( $tmpfname );
+		return new WP_Error( 'http_404', trim( wp_remote_retrieve_response_message( $response ) ) );
+	}
+
+	$content_md5 = wp_remote_retrieve_header( $response, 'content-md5' );
+	if ( $content_md5 ) {
+		$md5_check = verify_file_md5( $tmpfname, $content_md5 );
+		if ( is_wp_error( $md5_check ) ) {
+			unlink( $tmpfname );
+			return $md5_check;
+		}
+	}
+
+	return $tmpfname;
 }
 
 add_filter('upgrader_source_selection', 'rename_folder_name', 10, 3);
